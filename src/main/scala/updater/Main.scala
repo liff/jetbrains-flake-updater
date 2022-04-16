@@ -57,7 +57,7 @@ object Main
                   status -*> Variant.valueList.parCollected { variant =>
                     variant -*> builds
                       .parTraverse(resolve(product, edition, status, variant, _))
-                      .map(_.toList.unite.sorted)
+                      .map(_.toList.unite.sorted.reverse)
                   }
                 }
               }
