@@ -33,13 +33,13 @@ object Main
     O.stateFile.map { stateFile =>
       EmberClientBuilder.default[IO].withUserAgent(userAgent).build.use { http =>
         for
-          current <- readJsonFile[IO, Packages](stateFile).recover { case _: (NoSuchFileException | DecodingFailure) =>
+          current <- readJsonFile[IO, Packages](stateFile).recover { case _: (NoSuchFileException) =>
             Packages.empty
           }
 
           products <- http.expect[List[Product]](config.uris.updates)
 
-          packages <- {
+          updated <- {
             def resolve(product: String, edition: Edition, status: Status, variant: Variant, build: Build)
                 : IO[Option[Artifact]] =
               val known = current.findArtifact(product, edition, status, variant, build).toOptionT[IO]
@@ -64,7 +64,22 @@ object Main
             }
           }
 
-          _ <- writeJsonFile[IO, Packages](stateFile, packages)
+          _ <- {
+            val currentList = current.explode.sorted
+            val updatedList = updated.explode.sorted
+            def pretty(entry: (String, Edition, Status, Variant, Artifact)) =
+              val (product, edition, status, variant, artifact) = entry
+              s"$product $edition $status ($variant) ${artifact.build.version} [${artifact.build.number}]"
+
+            import cats.syntax.all.*
+            val newEntries =
+              updatedList.filterNot(currentList.contains).map(pretty).mkString_("New:\n  - ", "\n  - ", "\n")
+            val deleted =
+              currentList.filterNot(updatedList.contains).map(pretty).mkString_("Deleted:\n  - ", "\n  - ", "\n")
+
+            IO.println(newEntries ++ deleted)
+          }
+          _ <- writeJsonFile[IO, Packages](stateFile, updated)
         yield ExitCode.Success
       }
     }

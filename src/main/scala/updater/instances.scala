@@ -11,5 +11,3 @@ export org.typelevel.cats.time.instances.all.*
 export org.http4s.circe.{decodeUri, encodeUri}
 
 given Argument[Path] = Argument.readPath.map(Path.fromNioPath)
-
-given [A <: scala.reflect.Enum]: Show[A] = Show.fromToString

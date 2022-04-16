@@ -90,3 +90,10 @@ extension (packages: Packages)
       .flatMap(_.get(status))
       .flatMap(_.get(variant))
       .flatMap(_.find(_.build == build))
+
+  def explode: List[(String, Edition, Status, Variant, Artifact)] =
+    packages.toList
+      .flatMap { case (p, em) => em.toList.map { case (e, rest) => (p, e, rest) } }
+      .flatMap { case (p, e, sm) => sm.toList.map { case (s, rest) => (p, e, s, rest) } }
+      .flatMap { case (p, e, s, vm) => vm.toList.map { case (v, rest) => (p, e, s, v, rest) } }
+      .flatMap { case (p, e, s, v, al) => al.map { a => (p, e, s, v, a) } }
