@@ -2,42 +2,47 @@
   description = "Updater for JetBrains flake";
 
   inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     devshell.url = "github:numtide/devshell";
+    devshell.inputs.nixpkgs.follows = "nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
-    sbt-derivation.url = "github:zaninime/sbt-derivation";
+    sbt.url = "github:zaninime/sbt-derivation";
+    sbt.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, devshell, flake-utils, sbt-derivation, nixpkgs }:
+  outputs = { self, devshell, flake-utils, sbt, nixpkgs }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ devshell.overlay sbt-derivation.overlay ];
+          overlays = [ devshell.overlay ];
         };
+        jdk = pkgs.openjdk17;
       in rec {
-        packages.default =pkgs.sbt.mkDerivation {
+        packages.default = sbt.lib.mkSbtDerivation {
+          inherit pkgs;
+
           pname = "jetbrains-flake-updater";
           version = "1";
  
-          depsSha256 = "sha256-NJ7nYpgTf7a40aPFG8z5NurWPwK226jhKfYeZ7jedlY=";
+          depsSha256 = "sha256-H6z/Gi49LasuTBWXvOMsDREbJV7mE4S+5ZUxjyJ4uXk=";
  
           src = ./.;
  
-#          NATIVE_IMAGE_INSTALLED = "true";
-#          GRAALVM_HOME = pkgs.graalvm17-ce;
- 
-          buildInputs = [ pkgs.graalvm17-ce ];
-
           buildPhase = ''
             runHook preBuild
-            sbt graalvm-native-image:packageBin
+            sbt stage
             runHook postBuild
           '';
  
           installPhase = ''
             runHook preInstall
-            mkdir -p "$out/bin"
-            cp target/graalvm-native-image/jetbrains-flake-updater "$out/bin"
+            mkdir -p "$out/"
+            cp -a target/universal/stage/* "$out/"
+            substituteInPlace "$out/bin/jetbrains-flake-updater" \
+                --replace '@OUT@' "$out" \
+                --replace '@SHELL@' "${pkgs.runtimeShell}" \
+                --replace '@JAVA@' "${jdk}/bin/java"
             runHook postInstall
           '';
         };
