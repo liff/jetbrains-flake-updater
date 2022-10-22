@@ -25,6 +25,9 @@ def parseBasicIso(str: String): Result[LocalDate] =
       }.invalidNel
 
 extension (nodes: NodeSeq)
+  def many(that: String): Result[List[Node]] =
+    (nodes \ that).toList.validNel
+
   def some(that: String): Result[NonEmptyList[Node]] =
     NonEmptyList
       .fromList((nodes \ that).toList)
@@ -73,7 +76,7 @@ def product(node: Node): Result[Product] =
   (
     node.nonEmptyAttr("name"),
     node.some("code").map(_.map(_.text).toNes),
-    node.some("channel").andThen(_.traverse(channel)),
+    node.many("channel").andThen(_.traverse(channel)),
   ).mapN(Product.apply)
 
 given [F[_]: Concurrent]: EntityDecoder[F, List[Product]] =

@@ -50,7 +50,7 @@ case class Channel(
 ) derives CanEqual,
       Codec.AsObject
 
-case class Product(name: String, codes: NonEmptySet[String], channels: NonEmptyList[Channel])
+case class Product(name: String, codes: NonEmptySet[String], channels: List[Channel])
     derives CanEqual,
       Codec.AsObject
 
