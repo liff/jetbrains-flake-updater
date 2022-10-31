@@ -2,21 +2,23 @@ package updater
 
 import cats.{Eq, Foldable, Functor, Monad, Monoid, Parallel, Traverse}
 import org.http4s.Uri
+import scala.collection.immutable.SortedMap
+import cats.Order
 
 export cats.syntax.all.*
 export io.circe.syntax.EncoderOps
 export io.circe.syntax.KeyOps
 export org.http4s.syntax.all.*
 
-extension [F[_]: Foldable, A, B: Monoid: Eq](xs: F[(A, B)])
-  def smush: Map[A, B] =
-    xs.filter_(!_._2.isEmpty).map((k, v) => Map(k -> v)).combineAll
+extension [F[_]: Foldable, A: Order: Ordering, B: Monoid: Eq](xs: F[(A, B)])
+  def smush: SortedMap[A, B] =
+    xs.filter_(!_._2.isEmpty).map((k, v) => SortedMap(k -> v)).combineAll
 
 extension [T[_]: Traverse, A](xs: T[A])
-  def parCollected[M[_]: Monad: Parallel, B, C: Monoid: Eq](f: A => M[(B, C)]): M[Map[B, C]] =
+  def parCollected[M[_]: Monad: Parallel, B: Order: Ordering, C: Monoid: Eq](f: A => M[(B, C)]): M[SortedMap[B, C]] =
     xs.parTraverse(f).map(_.smush)
 
-  def collected[M[_]: Monad, B, C: Monoid: Eq](f: A => M[(B, C)]): M[Map[B, C]] =
+  def collected[M[_]: Monad, B: Order: Ordering, C: Monoid: Eq](f: A => M[(B, C)]): M[SortedMap[B, C]] =
     xs.traverse(f).map(_.smush)
 
 extension [A](a: A) def -*>[F[_]: Functor, B](fb: F[B]): F[(A, B)] = fb.map(a -> _)

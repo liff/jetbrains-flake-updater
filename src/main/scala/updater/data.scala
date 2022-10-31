@@ -8,6 +8,7 @@ import cats.data.{NonEmptyList, NonEmptySet}
 import io.circe.{Decoder, Encoder}
 import org.http4s.EntityDecoder
 import org.http4s.Uri
+import scala.collection.immutable.SortedMap
 
 enum Edition derives CanEqual { case Licensed, Community }
 object Edition extends EnumCompanion[Edition]
@@ -50,9 +51,7 @@ case class Channel(
 ) derives CanEqual,
       Codec.AsObject
 
-case class Product(name: String, codes: NonEmptySet[String], channels: List[Channel])
-    derives CanEqual,
-      Codec.AsObject
+case class Product(name: String, codes: NonEmptySet[String], channels: List[Channel]) derives CanEqual, Codec.AsObject
 
 opaque type Sha256 = String
 
@@ -71,10 +70,10 @@ object Artifact:
     Order.whenEqual(Order.by(_.build), Order.whenEqual(Order.by(_.downloadUri), Order.by(_.sha256)))
   given Ordering[Artifact] = ord.toOrdering
 
-type Packages = Map[String, Map[Edition, Map[Status, Map[Variant, List[Artifact]]]]]
+type Packages = SortedMap[String, SortedMap[Edition, SortedMap[Status, SortedMap[Variant, List[Artifact]]]]]
 
 object Packages:
-  val empty: Packages = Map.empty
+  val empty: Packages = SortedMap.empty
 
 extension (packages: Packages)
   def findArtifact(
