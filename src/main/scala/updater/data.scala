@@ -9,6 +9,7 @@ import io.circe.{Decoder, Encoder}
 import org.http4s.EntityDecoder
 import org.http4s.Uri
 import scala.collection.immutable.SortedMap
+import cats.instances.string.catsKernelStdOrderForString
 
 enum Edition derives CanEqual { case Licensed, Community }
 object Edition extends EnumCompanion[Edition]
@@ -51,12 +52,17 @@ case class Channel(
 ) derives CanEqual,
       Codec.AsObject
 
-case class Product(name: String, codes: NonEmptySet[String], channels: List[Channel]) derives CanEqual, Codec.AsObject
+case class Product(
+    name: String,
+    codes: NonEmptySet[String],
+    channels: List[Channel],
+) derives CanEqual,
+      Codec.AsObject
 
 opaque type Sha256 = String
 
 object Sha256:
-  given Order[Sha256] = cats.instances.string.catsKernelStdOrderForString
+  given Order[Sha256] = catsKernelStdOrderForString
 
   given Encoder[Sha256] = Encoder.encodeString
   given Decoder[Sha256] = Decoder.decodeString

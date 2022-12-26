@@ -24,22 +24,20 @@ object Main
       version = BuildInfo.version,
     ):
 
-  private val userAgent = `User-Agent`(ProductId(BuildInfo.name, Some(BuildInfo.version)))
-
   private object O:
+    val debug = Opts.flag("debug", help = "Enable debug logging.", short = "d").orFalse
+
     val stateFile = Opts.argument[Path](metavar = "STATE-FILE")
 
   override val main: Opts[IO[ExitCode]] =
-    O.stateFile.map { stateFile =>
-      EmberClientBuilder.default[IO].withUserAgent(userAgent).build.use { http =>
+    (O.debug, O.stateFile).mapN { (debug, stateFile) =>
+      httpClientResource[IO](logging = debug).use { http =>
         for
-          current <- readJsonFile[IO, Packages](stateFile).recover { case _: (NoSuchFileException) =>
-            Packages.empty
-          }
+          current <- readJsonFileOrEmpty[IO, Packages](stateFile)
 
           products <- http.expect[List[Product]](config.uris.updates)
 
-          updated <- {
+          updated <-
             def resolve(product: String, edition: Edition, status: Status, variant: Variant, build: Build)
                 : IO[Option[Artifact]] =
               val known = current.findArtifact(product, edition, status, variant, build).toOptionT[IO]
@@ -62,9 +60,8 @@ object Main
                 }
               }
             }
-          }
 
-          _ <- {
+          _ <-
             val currentList = current.explode.sorted
             val updatedList = updated.explode.sorted
             def pretty(entry: (String, Edition, Status, Variant, Artifact)) =
@@ -78,8 +75,9 @@ object Main
               currentList.filterNot(updatedList.contains).map(pretty).mkString_("Deleted:\n  - ", "\n  - ", "\n")
 
             IO.println(newEntries ++ deleted)
-          }
-          _ <- writeJsonFile[IO, Packages](stateFile, updated)
+
+          _ <- updated.writeTo[IO](stateFile)
+
         yield ExitCode.Success
       }
     }

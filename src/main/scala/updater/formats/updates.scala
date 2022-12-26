@@ -7,22 +7,17 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter.BASIC_ISO_DATE
 import java.time.format.DateTimeParseException
 import scala.xml.{Elem, Node, NodeSeq}
-
+import cats.syntax.all.*
 import cats.data.{Nested, NonEmptyList, NonEmptySet, OptionT, ValidatedNel}
 import org.http4s.scalaxml.*
 
 type Result[A] = ValidatedNel[String, A]
 
-final case class DecodingFailures(messages: NonEmptyList[String]) extends Exception(messages.toList.mkString("\n"))
+final case class DecodingFailures(messages: NonEmptyList[String]) extends Exception(messages.mkString_("\n"))
 
 def parseBasicIso(str: String): Result[LocalDate] =
   try LocalDate.parse(str, BASIC_ISO_DATE).nn.valid
-  catch
-    case e: DateTimeParseException =>
-      {
-        val msg = e.getMessage
-        if msg == null then "failed to parse" else msg
-      }.invalidNel
+  catch case e: DateTimeParseException => Option(e.getMessage).getOrElse("failed to parse").invalidNel
 
 extension (nodes: NodeSeq)
   def many(that: String): Result[List[Node]] =

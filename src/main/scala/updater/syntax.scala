@@ -2,6 +2,7 @@ package updater
 
 import cats.{Eq, Foldable, Functor, Monad, Monoid, Parallel, Traverse}
 import org.http4s.Uri
+import scala.annotation.targetName
 import scala.collection.immutable.SortedMap
 import cats.Order
 
@@ -21,21 +22,24 @@ extension [T[_]: Traverse, A](xs: T[A])
   def collected[M[_]: Monad, B: Order: Ordering, C: Monoid: Eq](f: A => M[(B, C)]): M[SortedMap[B, C]] =
     xs.traverse(f).map(_.smush)
 
-extension [A](a: A) def -*>[F[_]: Functor, B](fb: F[B]): F[(A, B)] = fb.map(a -> _)
+extension [A](a: A)
+  @targetName("paired")
+  def -*>[F[_]: Functor, B](fb: F[B]): F[(A, B)] = fb.map(a -> _)
 
 extension (path: Uri.Path)
   def withFileExtension(ext: String): Uri.Path =
-    if path.endsWithSlash || path.isEmpty then path
+    if path.endsWithSlash || path.isEmpty
+    then path
     else
-      val init = path.segments.dropRight(1)
-      path.segments.lastOption
-        .map { last =>
-          Uri.Path(
-            segments = init :+ Uri.Path.Segment(last.encoded ++ s".$ext"),
-            absolute = path.absolute,
-            endsWithSlash = path.endsWithSlash,
-          )
-        }
-        .getOrElse(path)
+      path.segments.lastOption.fold(path) { last =>
+        val init = path.segments.dropRight(1)
+        Uri.Path(
+          segments = init :+ Uri.Path.Segment(last.encoded ++ s".$ext"),
+          absolute = path.absolute,
+          endsWithSlash = path.endsWithSlash,
+        )
+      }
 
-extension (uri: Uri) def %(ext: String): Uri = uri.withPath(uri.path.withFileExtension(ext))
+extension (uri: Uri)
+  @targetName("withFileExtension")
+  def %(ext: String): Uri = uri.withPath(uri.path.withFileExtension(ext))
