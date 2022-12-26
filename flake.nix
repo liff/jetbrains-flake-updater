@@ -17,43 +17,41 @@
           inherit system;
           overlays = [ devshell.overlay ];
         };
-        jdk = pkgs.openjdk17;
+        graalvm = pkgs.graalvm17-ce;
+        pname = "jetbrains-flake-updater";
       in rec {
         packages.default = sbt.lib.mkSbtDerivation {
-          inherit pkgs;
+          inherit pkgs pname;
 
-          pname = "jetbrains-flake-updater";
           version = "1";
- 
-          depsSha256 = "sha256-H6z/Gi49LasuTBWXvOMsDREbJV7mE4S+5ZUxjyJ4uXk=";
- 
+
+          depsSha256 = "sha256-q6CMezUPwE3WnNB01HxJisg6W7+Kw0B/lgjfXrZttxk=";
+
           src = ./.;
- 
+
+          nativeBuildInputs = [ graalvm ];
+
           buildPhase = ''
             runHook preBuild
-            sbt stage
+            sbt nativeImage
             runHook postBuild
           '';
- 
+
           installPhase = ''
             runHook preInstall
-            mkdir -p "$out/"
-            cp -a target/universal/stage/* "$out/"
-            substituteInPlace "$out/bin/jetbrains-flake-updater" \
-                --replace '@OUT@' "$out" \
-                --replace '@SHELL@' "${pkgs.runtimeShell}" \
-                --replace '@JAVA@' "${jdk}/bin/java"
+            mkdir -p "$out/bin"
+            cp -a target/native-image/${pname} "$out/bin/"
             runHook postInstall
           '';
         };
 
         apps.default = flake-utils.lib.mkApp { drv = packages.default; };
 
-        devShell =
+        devShells.default =
           pkgs.devshell.mkShell {
             packages = with pkgs; [
               sbt
-              graalvm17-ce
+              graalvm
               dotty
             ];
           };
