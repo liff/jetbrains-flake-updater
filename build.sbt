@@ -45,5 +45,5 @@ libraryDependencies ++= Seq(
 )
 
 nativeImageInstalled := true
-nativeImageCommand := Seq("native-image")
+nativeImageCommand   := Seq("native-image")
 nativeImageOptions ++= Seq("--no-fallback", "--initialize-at-build-time")
