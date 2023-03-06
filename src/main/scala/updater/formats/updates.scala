@@ -16,6 +16,7 @@ type Result[A] = ValidatedNel[String, A]
 final case class DecodingFailures(messages: NonEmptyList[String]) extends Exception(messages.mkString_("\n"))
 
 def parseBasicIso(str: String): Result[LocalDate] =
+  import scala.language.unsafeNulls
   try LocalDate.parse(str, BASIC_ISO_DATE).nn.valid
   catch case e: DateTimeParseException => Option(e.getMessage).getOrElse("failed to parse").invalidNel
 

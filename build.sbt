@@ -23,7 +23,7 @@ scalacOptions ++= Seq(
   "-Xverify-signatures",
   "-Ycook-docs",
   "-Ysafe-init",
-//  "-Yexplicit-nulls",
+  "-Yexplicit-nulls",
   "-Ykind-projector:underscores",
 )
 
