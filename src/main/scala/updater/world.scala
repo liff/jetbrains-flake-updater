@@ -4,7 +4,7 @@ import fs2.io.file.Files
 import fs2.io.file.Path
 import io.circe.fs2.*
 import io.circe.{Decoder, Encoder}
-import cats.effect.{Sync, Async}
+import cats.effect.{Async, Sync}
 import fs2.Stream
 import fs2.text.utf8
 import cats.Show

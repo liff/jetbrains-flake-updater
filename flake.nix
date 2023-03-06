@@ -15,7 +15,7 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ devshell.overlay ];
+          overlays = [ devshell.overlays.default ];
         };
         graalvm = pkgs.graalvm17-ce;
         pname = "jetbrains-flake-updater";
@@ -25,7 +25,7 @@
 
           version = "1";
 
-          depsSha256 = "sha256-q6CMezUPwE3WnNB01HxJisg6W7+Kw0B/lgjfXrZttxk=";
+          depsSha256 = "sha256-Pob1yUpBiAmtXKHGZoDTRD3cs7wtjD69+EARci0H+As=";
 
           src = ./.;
 

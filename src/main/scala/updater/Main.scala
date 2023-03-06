@@ -38,8 +38,13 @@ object Main
           products <- http.expect[List[Product]](config.uris.updates)
 
           updated <-
-            def resolve(product: String, edition: Edition, status: Status, variant: Variant, build: Build)
-                : IO[Option[Artifact]] =
+            def resolve(
+                product: String,
+                edition: Edition,
+                status: Status,
+                variant: Variant,
+                build: Build,
+            ): IO[Option[Artifact]] =
               val known = current.findArtifact(product, edition, status, variant, build).toOptionT[IO]
 
               val resolved = (for
@@ -77,7 +82,6 @@ object Main
             IO.println(newEntries ++ deleted)
 
           _ <- updated.writeTo[IO](stateFile)
-
         yield ExitCode.Success
       }
     }

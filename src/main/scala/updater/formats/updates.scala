@@ -2,7 +2,7 @@ package updater
 package formats
 
 import org.http4s.{DecodeResult, EntityDecoder, InvalidMessageBodyFailure}
-import cats.effect.Concurrent
+import cats.effect.Async
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter.BASIC_ISO_DATE
 import java.time.format.DateTimeParseException
@@ -74,7 +74,7 @@ def product(node: Node): Result[Product] =
     node.many("channel").andThen(_.traverse(channel)),
   ).mapN(Product.apply)
 
-given [F[_]: Concurrent]: EntityDecoder[F, List[Product]] =
+given [F[_]: Async]: EntityDecoder[F, List[Product]] =
   EntityDecoder[F, Elem].flatMapR { elem =>
     (elem \ "product").toList
       .traverse(product)
